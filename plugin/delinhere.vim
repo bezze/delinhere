@@ -23,11 +23,11 @@ function! FindClosestPair ()
     return [l:closest, l:type_n]
 endfunction
 
-function! CmdBracketType (cmd, line_col, type_n)
+function! CmdBracketType (verb, adverb, line_col, type_n)
     let l:bk_op = ['[','(','{']
     let [l:line, l:col] = a:line_col
     call cursor(line,col+1)
-    exe 'normal! '. a:cmd .'i' .l:bk_op[a:type_n]
+    exe 'normal! '. a:verb . a:adverb .l:bk_op[a:type_n]
 endfunction
 
 
@@ -38,7 +38,7 @@ function! DeleteInnestBracket()
     if s:type == -1
         return
     else
-        call CmdBracketType('d',s:loc,s:type)
+        call CmdBracketType('d','i',s:loc,s:type)
     endif
 endfunction
 
@@ -50,6 +50,26 @@ function! ChangeInHere()
     call DeleteInnestBracket()
     startinsert
 endfunction
+
+function! DeleteAroundBracket()
+    let [s:loc, s:type] = FindClosestPair()
+    " We filter out the not-matches
+    if s:type == -1
+        return
+    else
+        call CmdBracketType('d','a',s:loc,s:type)
+    endif
+endfunction
+
+function! DeleteAroundHere()
+    call DeleteAroundBracket()
+endfunction
+
+function! ChangeAroundHere()
+    call DeleteAroundBracket()
+    startinsert
+endfunction
+
 "}}}
 
 " Yank functions --- {{{
@@ -59,11 +79,25 @@ function! YankInnestBracket()
     if s:type == -1
         return
     else
-        call CmdBracketType('y',s:loc,s:type)
+        call CmdBracketType('y','i',s:loc,s:type)
     endif
 endfunction
 
 function! YankInHere()
     call YankInnestBracket()
+endfunction
+
+function! YankAroundBracket()
+    let [s:loc, s:type] = FindClosestPair()
+    " We filter out the not-matches
+    if s:type == -1
+        return
+    else
+        call CmdBracketType('y','a',s:loc,s:type)
+    endif
+endfunction
+
+function! YankAroundHere()
+    call YankAroundBracket()
 endfunction
 "}}}

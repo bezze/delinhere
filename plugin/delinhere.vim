@@ -101,3 +101,10 @@ function! YankAroundHere()
     call YankAroundBracket()
 endfunction
 "}}}
+"
+nnoremap dih  :call DeleteInHere()<CR>
+nnoremap dah  :call DeleteAroundHere()<CR>
+nnoremap cih  :call ChangeInHere()<CR>
+nnoremap cah  :call ChangeAroundHere()<CR>
+nnoremap yih  :call YankInHere()<CR>
+nnoremap yah  :call YankAroundHere()<CR>

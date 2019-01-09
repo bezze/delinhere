@@ -25,47 +25,12 @@ function! FindClosestPair ()
     return [l:closest, l:type_n]
 endfunction
 
-function! s:get_visual_text() abort
-    " Save the window's view because `gv` may change the scroll position.
-    let view = winsaveview()
-
-    " Preserve the yank/change marks
-    let m1 = getpos("'[")
-    let m2 = getpos("']")
-
-    " Preserve the 'a' register, as well as what kind of register it is.
-    let reg_val = getreg('a')
-    let reg_type = getregtype('a')
-
-    " Yank text into the 'a' register and get the text
-    normal! gv"ay
-    let text = getreg('a')
-
-    " Restore the 'a' register
-    call setreg('a', reg_val, reg_type)
-
-    " Restore the yank/change marks
-    call setpos("'[", m1)
-    call setpos("']", m2)
-
-    " Restore the window's view
-    call winrestview(view)
-
-    return text
-endfunction
-
-function! FindArgs ()
-    let [s:loc, s:type] = FindClosestPair()
-    let [l:line, l:col] = a:line_col
-    call cursor(line,col)
-endfunction
-
 function! s:CmdBracketType (verb, adverb, line_col, type_n)
     let [l:line, l:col] = a:line_col
     call cursor(line,col+1)
     call feedkeys(a:verb . a:adverb . s:bk_op[a:type_n], 'n')
 endfunction
-"
+
 function! s:TryCmdBracketType(verb, adverb)
     let [s:loc, s:type] = FindClosestPair()
     " We filter out the not-matches
@@ -121,6 +86,61 @@ endfunction
 
 "}}}
 
+
+function! s:get_visual_text() abort
+    call SelectInHere()
+
+    " Save the window's view because `gv` may change the scroll position.
+    let view = winsaveview()
+
+    " Preserve the yank/change marks
+    let m1 = getpos("'[")
+    let m2 = getpos("']")
+
+    " Preserve the 'a' register, as well as what kind of register it is.
+    let reg_val = getreg('a')
+    let reg_type = getregtype('a')
+
+    " Yank text into the 'a' register and get the text
+    execute '"ay<ESC>'
+    let text = getreg('a')
+
+    " Restore the 'a' register
+    call setreg('a', reg_val, reg_type)
+
+    " Restore the yank/change marks
+    call setpos("'[", m1)
+    call setpos("']", m2)
+
+    " Restore the window's view
+    call winrestview(view)
+
+    return text
+endfunction
+
+function! s:get_visual_selection()
+    " Why is this not a built-in Vim script function?!
+    let [line_start, column_start] = getpos("'<")[1:2]
+    let [line_end, column_end] = getpos("'>")[1:2]
+    let lines = getline(line_start, line_end)
+    if len(lines) == 0
+        return ''
+    endif
+    let lines[-1] = lines[-1][: column_end - (&selection == 'inclusive' ? 1 : 2)]
+    let lines[0] = lines[0][column_start - 1:]
+    return join(lines, "\n")
+endfunction
+
+function! FindArgs ()
+    " let [l:loc, l:type] = FindClosestPair()
+    " let [l:line, l:col] = l:loc
+    call SelectInHere()
+    let l:text = s:get_visual_selection()
+    execute '<ESC>'
+    echo l:text
+endfunction
+
+" Mappings functions --- {{{
 nnoremap dih  :call DeleteInHere()<CR>
 nnoremap dah  :call DeleteAroundHere()<CR>
 nnoremap cih  :call ChangeInHere()<CR>
@@ -129,3 +149,5 @@ nnoremap yih  :call YankInHere()<CR>
 nnoremap yah  :call YankAroundHere()<CR>
 nnoremap vih  :call SelectInHere()<CR>
 nnoremap vah  :call SelectAroundHere()<CR>
+nnoremap ;fa  :call FindArgs()<CR>
+"}}}

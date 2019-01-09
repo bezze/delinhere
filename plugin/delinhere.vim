@@ -25,6 +25,41 @@ function! FindClosestPair ()
     return [l:closest, l:type_n]
 endfunction
 
+function! s:get_visual_text() abort
+    " Save the window's view because `gv` may change the scroll position.
+    let view = winsaveview()
+
+    " Preserve the yank/change marks
+    let m1 = getpos("'[")
+    let m2 = getpos("']")
+
+    " Preserve the 'a' register, as well as what kind of register it is.
+    let reg_val = getreg('a')
+    let reg_type = getregtype('a')
+
+    " Yank text into the 'a' register and get the text
+    normal! gv"ay
+    let text = getreg('a')
+
+    " Restore the 'a' register
+    call setreg('a', reg_val, reg_type)
+
+    " Restore the yank/change marks
+    call setpos("'[", m1)
+    call setpos("']", m2)
+
+    " Restore the window's view
+    call winrestview(view)
+
+    return text
+endfunction
+
+function! FindArgs ()
+    let [s:loc, s:type] = FindClosestPair()
+    let [l:line, l:col] = a:line_col
+    call cursor(line,col)
+endfunction
+
 function! s:CmdBracketType (verb, adverb, line_col, type_n)
     let [l:line, l:col] = a:line_col
     call cursor(line,col+1)

@@ -31,6 +31,36 @@ function! s:CmdBracketType (verb, adverb, line_col, type_n)
     exe 'normal! '. a:verb . a:adverb . s:bk_op[a:type_n]
 endfunction
 
+" Select functions --- {{{
+function! s:SelectInnestBracket()
+    let [s:loc, s:type] = FindClosestPair()
+    " We filter out the not-matches
+    if s:type == -1
+        return
+    else
+        call s:CmdBracketType('v','i',s:loc,s:type)
+    endif
+endfunction
+
+function! SelectInHere()
+    call s:SelectInnestBracket()
+endfunction
+
+function! s:SelectAroundBracket()
+    let [s:loc, s:type] = FindClosestPair()
+    " We filter out the not-matches
+    if s:type == -1
+        return
+    else
+        call s:CmdBracketType('v','a',s:loc,s:type)
+    endif
+endfunction
+
+function! SelectAroundHere()
+    call s:SelectAroundBracket()
+endfunction
+
+"}}}
 
 " Delete/Change functions --- {{{
 function! s:DeleteInnestBracket()
@@ -109,3 +139,5 @@ nnoremap cih  :call ChangeInHere()<CR>
 nnoremap cah  :call ChangeAroundHere()<CR>
 nnoremap yih  :call YankInHere()<CR>
 nnoremap yah  :call YankAroundHere()<CR>
+nnoremap vih  :call SelectInHere()<CR>
+nnoremap vah  :call SelectAroundHere()<CR>

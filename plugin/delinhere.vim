@@ -30,109 +30,64 @@ function! s:CmdBracketType (verb, adverb, line_col, type_n)
     call cursor(line,col+1)
     exe 'normal! '. a:verb . a:adverb . s:bk_op[a:type_n]
 endfunction
+"
+function! s:TryCmdBracketType(verb, adverb)
+    let [s:loc, s:type] = FindClosestPair()
+    " We filter out the not-matches
+    if s:type == -1
+        return
+    else
+        call s:CmdBracketType(a:verb,a:adverb,s:loc,s:type)
+    endif
+endfunction
+
 
 " Select functions --- {{{
-function! s:SelectInnestBracket()
-    let [s:loc, s:type] = FindClosestPair()
-    " We filter out the not-matches
-    if s:type == -1
-        return
-    else
-        call s:CmdBracketType('v','i',s:loc,s:type)
-    endif
-endfunction
 
 function! SelectInHere()
-    call s:SelectInnestBracket()
-endfunction
-
-function! s:SelectAroundBracket()
-    let [s:loc, s:type] = FindClosestPair()
-    " We filter out the not-matches
-    if s:type == -1
-        return
-    else
-        call s:CmdBracketType('v','a',s:loc,s:type)
-    endif
+    call s:TryCmdBracketType('v','i')
 endfunction
 
 function! SelectAroundHere()
-    call s:SelectAroundBracket()
+    call s:TryCmdBracketType('v','a')
 endfunction
 
 "}}}
 
-" Delete/Change functions --- {{{
-function! s:DeleteInnestBracket()
-    let [s:loc, s:type] = FindClosestPair()
-    " We filter out the not-matches
-    if s:type == -1
-        return
-    else
-        call s:CmdBracketType('d','i',s:loc,s:type)
-    endif
-endfunction
+" Change/Delete functions --- {{{
 
 function! DeleteInHere()
-    call s:DeleteInnestBracket()
-endfunction
-
-function! ChangeInHere()
-    call s:DeleteInnestBracket()
-    startinsert
-endfunction
-
-function! s:DeleteAroundBracket()
-    let [s:loc, s:type] = FindClosestPair()
-    " We filter out the not-matches
-    if s:type == -1
-        return
-    else
-        call s:CmdBracketType('d','a',s:loc,s:type)
-    endif
+    call s:TryCmdBracketType('d','i')
 endfunction
 
 function! DeleteAroundHere()
-    call s:DeleteAroundBracket()
+    call s:TryCmdBracketType('d','a')
+endfunction
+
+function! ChangeInHere()
+    call s:TryCmdBracketType('c','i')
+    startinsert
 endfunction
 
 function! ChangeAroundHere()
-    call s:DeleteAroundBracket()
+    call s:TryCmdBracketType('c','a')
     startinsert
 endfunction
 
 "}}}
 
 " Yank functions --- {{{
-function! s:YankInnestBracket()
-    let [s:loc, s:type] = FindClosestPair()
-    " We filter out the not-matches
-    if s:type == -1
-        return
-    else
-        call s:CmdBracketType('y','i',s:loc,s:type)
-    endif
-endfunction
 
 function! YankInHere()
-    call s:YankInnestBracket()
-endfunction
-
-function! s:YankAroundBracket()
-    let [s:loc, s:type] = FindClosestPair()
-    " We filter out the not-matches
-    if s:type == -1
-        return
-    else
-        call s:CmdBracketType('y','a',s:loc,s:type)
-    endif
+    call s:TryCmdBracketType('y','i')
 endfunction
 
 function! YankAroundHere()
-    call s:YankAroundBracket()
+    call s:TryCmdBracketType('y','a')
 endfunction
+
 "}}}
-"
+
 nnoremap dih  :call DeleteInHere()<CR>
 nnoremap dah  :call DeleteAroundHere()<CR>
 nnoremap cih  :call ChangeInHere()<CR>

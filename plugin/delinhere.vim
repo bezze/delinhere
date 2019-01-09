@@ -1,3 +1,5 @@
+let s:bk_op = ['[','(','{']
+
 function! FindClosestPair ()
     let l:bk_op = ['\[','(','{']
     let l:bk_cl = ['\]',')','}']
@@ -23,82 +25,81 @@ function! FindClosestPair ()
     return [l:closest, l:type_n]
 endfunction
 
-function! CmdBracketType (verb, adverb, line_col, type_n)
-    let l:bk_op = ['[','(','{']
+function! s:CmdBracketType (verb, adverb, line_col, type_n)
     let [l:line, l:col] = a:line_col
     call cursor(line,col+1)
-    exe 'normal! '. a:verb . a:adverb .l:bk_op[a:type_n]
+    exe 'normal! '. a:verb . a:adverb . s:bk_op[a:type_n]
 endfunction
 
 
 " Delete/Change functions --- {{{
-function! DeleteInnestBracket()
+function! s:DeleteInnestBracket()
     let [s:loc, s:type] = FindClosestPair()
     " We filter out the not-matches
     if s:type == -1
         return
     else
-        call CmdBracketType('d','i',s:loc,s:type)
+        call s:CmdBracketType('d','i',s:loc,s:type)
     endif
 endfunction
 
 function! DeleteInHere()
-    call DeleteInnestBracket()
+    call s:DeleteInnestBracket()
 endfunction
 
 function! ChangeInHere()
-    call DeleteInnestBracket()
+    call s:DeleteInnestBracket()
     startinsert
 endfunction
 
-function! DeleteAroundBracket()
+function! s:DeleteAroundBracket()
     let [s:loc, s:type] = FindClosestPair()
     " We filter out the not-matches
     if s:type == -1
         return
     else
-        call CmdBracketType('d','a',s:loc,s:type)
+        call s:CmdBracketType('d','a',s:loc,s:type)
     endif
 endfunction
 
 function! DeleteAroundHere()
-    call DeleteAroundBracket()
+    call s:DeleteAroundBracket()
 endfunction
 
 function! ChangeAroundHere()
-    call DeleteAroundBracket()
+    call s:DeleteAroundBracket()
     startinsert
 endfunction
 
 "}}}
 
 " Yank functions --- {{{
-function! YankInnestBracket()
+function! s:YankInnestBracket()
     let [s:loc, s:type] = FindClosestPair()
     " We filter out the not-matches
     if s:type == -1
         return
     else
-        call CmdBracketType('y','i',s:loc,s:type)
+        call s:CmdBracketType('y','i',s:loc,s:type)
     endif
 endfunction
 
 function! YankInHere()
-    call YankInnestBracket()
+    call s:YankInnestBracket()
 endfunction
 
-function! YankAroundBracket()
+function! s:YankAroundBracket()
     let [s:loc, s:type] = FindClosestPair()
     " We filter out the not-matches
     if s:type == -1
         return
     else
-        call CmdBracketType('y','a',s:loc,s:type)
+        call s:CmdBracketType('y','a',s:loc,s:type)
     endif
 endfunction
 
 function! YankAroundHere()
-    call YankAroundBracket()
+    call s:YankAroundBracket()
 endfunction
 "}}}
 "

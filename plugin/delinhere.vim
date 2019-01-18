@@ -95,6 +95,14 @@ endfunction
 
 "}}}
 
+function! s:SplitNStrip(arg_string)
+        let l:arg_list = split(a:arg_string, ",")
+        let l:new_list = []
+        for ar in l:arg_list
+            let l:new_list = new_list + [Strip(ar)]
+        endfor
+        return new_list
+endfunction
 
 function! FindArgs ()
     let [l:op, l:type] = FindClosestPair()
@@ -105,14 +113,7 @@ function! FindArgs ()
     if op[0] == cl[0]
         " Same line
         let l:end = cl[1]  - 2
-
-        let l:arg_list = split(lines[0][op[1]:end], ",")
-        let l:new_list = []
-        for ar in l:arg_list
-            let l:new_list = new_list + [Strip(ar)]
-        endfor
-
-        return new_list
+        return s:SplitNStrip(lines[0][op[1]:end])
     else
         let l:end = cl[1] - 1
         let l:lines = [lines[0][op[1]:]] + lines[1:-2] + [lines[-1][:end]]
@@ -121,9 +122,8 @@ function! FindArgs ()
     endif
 endfunction
 
-function! CycleArgs (ori, args)
+function! s:CycleArgs (ori, args)
     let l:largs = a:args
-    echo largs
     if a:ori == "+"
         let l:rot =  [largs[-1]] +  largs[:-2]
     elseif a:ori == "-"
@@ -132,18 +132,23 @@ function! CycleArgs (ori, args)
     return rot
 endfunction
 
-function! CyclicPerm ()
+function! s:Perm (ori)
+    let save_cursor = getcurpos()
+
     let l:args = FindArgs()
-    let l:nargs = CycleArgs("+", args)
+    let l:nargs = s:CycleArgs(a:ori, args)
     call DeleteInHere()
     exec "normal! i" . join(nargs,", ")
+
+    call setpos('.', save_cursor)
+endfunction
+
+function! CyclicPerm ()
+    call s:Perm('+')
 endfunction
 
 function! AcyclicPerm ()
-    let l:args = FindArgs()
-    let l:nargs = CycleArgs("-", args)
-    call DeleteInHere()
-    exec "normal! i" . join(nargs,", ")
+    call s:Perm('-')
 endfunction
 
 " Mappings functions --- {{{

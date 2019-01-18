@@ -1,5 +1,9 @@
 let s:bk_op = ['[','(','{']
 
+function! Strip(input_string)
+    return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
+endfunction
+
 function! FindClosestPair ()
     let l:bk_op = ['\[','(','{']
     let l:bk_cl = ['\]',')','}']
@@ -52,6 +56,11 @@ function! SelectAroundHere()
     call s:TryCmdBracketType('v','a')
 endfunction
 
+function! SelectInHereAndLeave()
+    call s:TryCmdBracketType('v','i')
+    exe "normal! <esc>"
+endfunction
+
 "}}}
 
 " Change/Delete functions --- {{{
@@ -87,57 +96,54 @@ endfunction
 "}}}
 
 
-function! s:get_visual_text() abort
-    call SelectInHere()
-
-    " Save the window's view because `gv` may change the scroll position.
-    let view = winsaveview()
-
-    " Preserve the yank/change marks
-    let m1 = getpos("'[")
-    let m2 = getpos("']")
-
-    " Preserve the 'a' register, as well as what kind of register it is.
-    let reg_val = getreg('a')
-    let reg_type = getregtype('a')
-
-    " Yank text into the 'a' register and get the text
-    execute '"ay<ESC>'
-    let text = getreg('a')
-
-    " Restore the 'a' register
-    call setreg('a', reg_val, reg_type)
-
-    " Restore the yank/change marks
-    call setpos("'[", m1)
-    call setpos("']", m2)
-
-    " Restore the window's view
-    call winrestview(view)
-
-    return text
-endfunction
-
-function! s:get_visual_selection()
-    " Why is this not a built-in Vim script function?!
-    let [line_start, column_start] = getpos("'<")[1:2]
-    let [line_end, column_end] = getpos("'>")[1:2]
-    let lines = getline(line_start, line_end)
-    if len(lines) == 0
-        return ''
-    endif
-    let lines[-1] = lines[-1][: column_end - (&selection == 'inclusive' ? 1 : 2)]
-    let lines[0] = lines[0][column_start - 1:]
-    return join(lines, "\n")
-endfunction
-
 function! FindArgs ()
-    " let [l:loc, l:type] = FindClosestPair()
-    " let [l:line, l:col] = l:loc
-    call SelectInHere()
-    let l:text = s:get_visual_selection()
-    execute '<ESC>'
-    echo l:text
+    let [l:op, l:type] = FindClosestPair()
+    let l:bk_op = ['\[','(','{']
+    let l:bk_cl = ['\]',')','}']
+    let l:cl = searchpairpos(l:bk_op[l:type],'',l:bk_cl[l:type], 'nW','(synIDattr(synID(line("."), col("."), 0), "name") =~? "string\\|comment")')
+    let l:lines = getline(op[0], cl[0])
+    if op[0] == cl[0]
+        " Same line
+        let l:end = cl[1]  - 2
+
+        let l:arg_list = split(lines[0][op[1]:end], ",")
+        let l:new_list = []
+        for ar in l:arg_list
+            let l:new_list = new_list + [Strip(ar)]
+        endfor
+
+        return new_list
+    else
+        let l:end = cl[1] - 1
+        let l:lines = [lines[0][op[1]:]] + lines[1:-2] + [lines[-1][:end]]
+        " join(lines, "\n")
+        echo lines
+    endif
+endfunction
+
+function! CycleArgs (ori, args)
+    let l:largs = a:args
+    echo largs
+    if a:ori == "+"
+        let l:rot =  [largs[-1]] +  largs[:-2]
+    elseif a:ori == "-"
+        let l:rot =  largs[1:] + [largs[0]]
+    endif
+    return rot
+endfunction
+
+function! CyclicPerm ()
+    let l:args = FindArgs()
+    let l:nargs = CycleArgs("+", args)
+    call DeleteInHere()
+    exec "normal! i" . join(nargs,", ")
+endfunction
+
+function! AcyclicPerm ()
+    let l:args = FindArgs()
+    let l:nargs = CycleArgs("-", args)
+    call DeleteInHere()
+    exec "normal! i" . join(nargs,", ")
 endfunction
 
 " Mappings functions --- {{{
@@ -150,4 +156,6 @@ nnoremap yah  :call YankAroundHere()<CR>
 nnoremap vih  :call SelectInHere()<CR>
 nnoremap vah  :call SelectAroundHere()<CR>
 nnoremap ;fa  :call FindArgs()<CR>
+nnoremap ;fb  :call CyclicPerm()<CR>
+nnoremap ;fc  :call AcyclicPerm()<CR>
 "}}}

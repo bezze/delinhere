@@ -4,6 +4,10 @@ function! Strip(input_string)
     return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
 
+" function! StripBracket(input_string)
+"     return substitute(a:input_string, '^{\(.\{-}\)\s*$', '\1', '')
+" endfunction
+
 function! FindClosestPair ()
     let l:bk_op = ['\[','(','{']
     let l:bk_cl = ['\]',')','}']
@@ -104,6 +108,36 @@ function! s:SplitNStrip(arg_string)
         return new_list
 endfunction
 
+function! s:MultiLineArgs(op, cl, lines)
+    " echom string(a:lines)
+    let l:line_len = []
+    let l:line_sta = []
+    let l:lines = []
+
+    " for line in a:lines
+    "     let l:line_len = line_len + [len(line)]
+    " endfor
+
+    for line_n in range(a:op[0],a:cl[0])
+        let l:line_sta = line_sta + [indent(line_n)]
+    endfor
+
+    for gum in a:lines[1:-2]
+        let l:lines = lines + [s:SplitNStrip(gum)]
+    endfor
+
+    let l:line_len = line_len[1:-2]
+    let l:line_sta = line_sta[1:-2]
+
+    " echo a:lines
+    " echom string(line_len)
+    echom "lines: " . string(l:lines)
+    echom "lines_sta: " . string(line_sta)
+
+    return [l:lines, line_sta]
+
+endfunction
+
 function! FindArgs ()
     let [l:op, l:type] = FindClosestPair()
     let l:bk_op = ['\[','(','{']
@@ -112,17 +146,31 @@ function! FindArgs ()
     let l:lines = getline(op[0], cl[0])
     if op[0] == cl[0]
         " Same line
+        let l:multi = 0
         let l:end = cl[1]  - 2
-        return s:SplitNStrip(lines[0][op[1]:end])
+        return [multi, s:SplitNStrip(lines[0][op[1]:end])]
     else
-        let l:end = cl[1] - 1
-        let l:lines = [lines[0][op[1]:]] + lines[1:-2] + [lines[-1][:end]]
-        " join(lines, "\n")
-        echo lines
+        " Diff line
+        let l:multi = 1
+        let l:beg = op[1] - 0
+        let l:end_ = cl[1] - 2
+        let l:lines = [lines[0][beg:]] + lines[1:-2] + [lines[-1][:end_]]
+        let [l:lines, l:line_sta] = s:MultiLineArgs(op,cl,lines)
+        return [multi, lines, line_sta]
     endif
 endfunction
 
-function! s:CycleArgs (ori, args)
+function! s:CycleArgsML (ori, args)
+    let [l:llists, l:starts] = a:args
+    if a:ori == "+"
+        let l:rot =  [largs[-1]] +  largs[:-2]
+    elseif a:ori == "-"
+        let l:rot =  largs[1:] + [largs[0]]
+    endif
+    return rot
+endfunction
+
+function! s:CycleArgsSL (ori, args)
     let l:largs = a:args
     if a:ori == "+"
         let l:rot =  [largs[-1]] +  largs[:-2]
@@ -135,10 +183,18 @@ endfunction
 function! s:Perm (ori)
     let save_cursor = getcurpos()
 
-    let l:args = FindArgs()
-    let l:nargs = s:CycleArgs(a:ori, args)
-    call DeleteInHere()
-    exec "normal! i" . join(nargs,", ")
+    let l:findargs = FindArgs()
+    let l:multi = findargs[0]
+    let l:args = findargs[1:]
+
+    if l:multi == 0
+        let l:nargs = s:CycleArgsSL(a:ori, args)
+        call DeleteInHere()
+        exec "normal! i" . join(nargs,", ")
+    else
+        let l:nargs = s:CycleArgsML(a:ori, args)
+        exec "normal! i" . join(nargs,"\n ")
+    endif
 
     call setpos('.', save_cursor)
 endfunction

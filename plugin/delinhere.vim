@@ -1,7 +1,11 @@
 let s:bk_op = ['[','(','{']
 
 function! Strip(input_string)
-    return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
+    " Takes a string an clears surrounding whitespaces, tabs and endlines
+    " let l:new_string = substitute(a:input_string, '\s\{1,}', '', 'g')
+    let l:new_string = substitute(a:input_string, '\s*', '', "g")
+    " echo [a:input_string, new_string]
+    return new_string
 endfunction
 
 " function! StripBracket(input_string)
@@ -62,7 +66,7 @@ endfunction
 
 function! SelectInHereAndLeave()
     call s:TryCmdBracketType('v','i')
-    exe "normal! <esc>"
+    exe "normal! \<esc>"
 endfunction
 
 "}}}
@@ -100,9 +104,12 @@ endfunction
 "}}}
 
 function! s:SplitNStrip(arg_string)
+    " Gets an function argument split over several lines and returns a list of
+    " the arguments inputs
         let l:arg_list = split(a:arg_string, ",")
         let l:new_list = []
         for ar in l:arg_list
+            " let l:new_list = new_list + [eval(Strip(ar))]
             let l:new_list = new_list + [Strip(ar)]
         endfor
         return new_list
@@ -148,7 +155,8 @@ function! FindArgs ()
         " Same line
         let l:multi = 0
         let l:end = cl[1]  - 2
-        return [multi, s:SplitNStrip(lines[0][op[1]:end])]
+        let l:sns = s:SplitNStrip(lines[0][op[1]:end])
+        return [multi, sns]
     else
         " Diff line
         let l:multi = 1
@@ -162,8 +170,35 @@ endfunction
 
 function! s:CycleArgsML (ori, args)
     let [l:llists, l:starts] = a:args
+
+    " echom string(starts)
+
+    let l:length = len(llists)
+
     if a:ori == "+"
-        let l:rot =  [largs[-1]] +  largs[:-2]
+
+        for i in range(length)
+
+            echom string(i)
+
+            let l:mini_list = llists[i]
+            let l:first_ = mini_list[0]
+
+            let l:before_mini = llists[i-1]
+            let l:before_mini += first_
+
+            let llists[i-1] = before_mini
+
+            if len(mini_list) == 1
+                llists[i] = []
+            else
+                remove(llists[i][0])
+            endif
+
+        endfor
+
+        echom string(llist)
+
     elseif a:ori == "-"
         let l:rot =  largs[1:] + [largs[0]]
     endif
@@ -180,31 +215,32 @@ function! s:CycleArgsSL (ori, args)
     return rot
 endfunction
 
-function! s:Perm (ori)
+function! Perm (ori)
     let save_cursor = getcurpos()
 
     let l:findargs = FindArgs()
     let l:multi = findargs[0]
-    let l:args = findargs[1:]
 
     if l:multi == 0
+        let l:args = findargs[1]
         let l:nargs = s:CycleArgsSL(a:ori, args)
         call DeleteInHere()
-        exec "normal! i" . join(nargs,", ")
+        exec 'normal! i' . join(nargs,', ')
     else
+        let l:args = findargs[1:]
         let l:nargs = s:CycleArgsML(a:ori, args)
-        exec "normal! i" . join(nargs,"\n ")
+        exec "normal! i" . join(nargs,",\n ")
     endif
 
     call setpos('.', save_cursor)
 endfunction
 
 function! CyclicPerm ()
-    call s:Perm('+')
+    call Perm('+')
 endfunction
 
 function! AcyclicPerm ()
-    call s:Perm('-')
+    call Perm('-')
 endfunction
 
 " Mappings functions --- {{{

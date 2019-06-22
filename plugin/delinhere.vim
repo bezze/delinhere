@@ -28,7 +28,7 @@ endfunction
 function! s:CmdBracketType (verb, adverb, line_col, type_n)
     let [l:line, l:col] = a:line_col
     call cursor(line,col+1)
-    exe 'normal! '. a:verb . a:adverb . s:bk_op[a:type_n]
+    call feedkeys(a:verb . a:adverb . s:bk_op[a:type_n], 'n')
 endfunction
 "
 function! s:TryCmdBracketType(verb, adverb)
@@ -66,12 +66,10 @@ endfunction
 
 function! ChangeInHere()
     call s:TryCmdBracketType('c','i')
-    startinsert
 endfunction
 
 function! ChangeAroundHere()
     call s:TryCmdBracketType('c','a')
-    startinsert
 endfunction
 
 "}}}
